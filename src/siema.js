@@ -13,7 +13,7 @@ export default class Siema {
     // Resolve selector's type
     this.selector = typeof this.config.selector === 'string' ? document.querySelector(this.config.selector) : this.config.selector;
 
-    // Early throw if selector doesn't exists
+    // Early throw if selector doesnt exists
     if (this.selector === null) {
       throw new Error('Something wrong with your selector 😭');
     }
@@ -75,9 +75,9 @@ export default class Siema {
 
 
   /**
-   * Builds the markup and attaches listeners to required events.
+   * Attaches listeners to required events.
    */
-  init() {
+  attachEvents() {
     // Resize element on window resize
     window.addEventListener('resize', this.resizeHandler);
 
@@ -103,6 +103,28 @@ export default class Siema {
       this.selector.addEventListener('mouseleave', this.mouseleaveHandler);
       this.selector.addEventListener('mousemove', this.mousemoveHandler);
     }
+  }
+  /**
+   * Attaches listeners to required events.
+   */
+  detachEvents() {
+    window.removeEventListener('resize', this.resizeHandler);
+    this.selector.style.cursor = 'auto';
+    this.selector.removeEventListener('touchstart', this.touchstartHandler);
+    this.selector.removeEventListener('touchend', this.touchendHandler);
+    this.selector.removeEventListener('touchmove', this.touchmoveHandler);
+    this.selector.removeEventListener('mousedown', this.mousedownHandler);
+    this.selector.removeEventListener('mouseup', this.mouseupHandler);
+    this.selector.removeEventListener('mouseleave', this.mouseleaveHandler);
+    this.selector.removeEventListener('mousemove', this.mousemoveHandler);
+  }
+
+
+  /**
+   * Builds the markup.
+   */
+  init() {
+    this.attachEvents();
 
     // update perPage number dependable of user value
     this.resolveSlidesNumber();
@@ -511,15 +533,7 @@ export default class Siema {
    * @param {function} callback - Optional callback function.
    */
   destroy(restoreMarkup = false, callback) {
-    window.removeEventListener('resize', this.resizeHandler);
-    this.selector.style.cursor = 'auto';
-    this.selector.removeEventListener('touchstart', this.touchstartHandler);
-    this.selector.removeEventListener('touchend', this.touchendHandler);
-    this.selector.removeEventListener('touchmove', this.touchmoveHandler);
-    this.selector.removeEventListener('mousedown', this.mousedownHandler);
-    this.selector.removeEventListener('mouseup', this.mouseupHandler);
-    this.selector.removeEventListener('mouseleave', this.mouseleaveHandler);
-    this.selector.removeEventListener('mousemove', this.mousemoveHandler);
+    this.detachEvents();
 
     if (restoreMarkup) {
       const slides = document.createDocumentFragment();
