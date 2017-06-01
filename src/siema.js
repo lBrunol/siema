@@ -104,6 +104,8 @@ export default class Siema {
       this.selector.addEventListener('mousemove', this.mousemoveHandler);
     }
   }
+
+
   /**
    * Attaches listeners to required events.
    */
