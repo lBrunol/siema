@@ -20,6 +20,10 @@
 </body>
 <script src="siema.min.js"></script>
 <script>
-    new Siema();
+    new Siema({
+        loop: true,
+        duration: 500,
+        navigation: { next: '<a href="#">Próximo</a>', prev: '<a href="#">Anterior</a>' },
+    });
 </script>
 </html>

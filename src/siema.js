@@ -42,6 +42,7 @@ export default class Siema {
       draggable: true,
       threshold: 20,
       loop: false,
+      navigation: false,
       onInit: () => {},
       onChange: () => {},
     };
@@ -86,16 +87,19 @@ export default class Siema {
         letItGo: null
       };
 
+      //Container of slider frame
+      this.outerFrame = document.createElement('div');
+
       // Touch events
-      this.selector.addEventListener('touchstart', this.touchstartHandler, { passive: true });
-      this.selector.addEventListener('touchend', this.touchendHandler);
-      this.selector.addEventListener('touchmove', this.touchmoveHandler, { passive: true });
+      this.outerFrame.addEventListener('touchstart', this.touchstartHandler, { passive: true });
+      this.outerFrame.addEventListener('touchend', this.touchendHandler);
+      this.outerFrame.addEventListener('touchmove', this.touchmoveHandler, { passive: true });
 
       // Mouse events
-      this.selector.addEventListener('mousedown', this.mousedownHandler);
-      this.selector.addEventListener('mouseup', this.mouseupHandler);
-      this.selector.addEventListener('mouseleave', this.mouseleaveHandler);
-      this.selector.addEventListener('mousemove', this.mousemoveHandler);
+      this.outerFrame.addEventListener('mousedown', this.mousedownHandler);
+      this.outerFrame.addEventListener('mouseup', this.mouseupHandler);
+      this.outerFrame.addEventListener('mouseleave', this.mouseleaveHandler);
+      this.outerFrame.addEventListener('mousemove', this.mousemoveHandler);
     }
 
     if (this.selector === null) {
@@ -106,16 +110,17 @@ export default class Siema {
     this.resolveSlidesNumber();
 
     // hide everything out of selector's boundaries
-    this.selector.style.overflow = 'hidden';
+    this.outerFrame.style.overflow = 'hidden';
 
     // Create frame and apply styling
     this.sliderFrame = document.createElement('div');
     this.sliderFrame.style.width = `${(this.selectorWidth / this.perPage) * this.innerElements.length}px`;
     this.sliderFrame.style.webkitTransition = `all ${this.config.duration}ms ${this.config.easing}`;
     this.sliderFrame.style.transition = `all ${this.config.duration}ms ${this.config.easing}`;
+    this.sliderFrame.style.willChange = 'transform';
 
     if (this.config.draggable) {
-      this.selector.style.cursor = '-webkit-grab';
+      this.outerFrame.style.cursor = '-webkit-grab';
     }
 
     // Create a document fragment to put slides into it
@@ -136,10 +141,16 @@ export default class Siema {
 
     // Clear selector (just in case something is there) and insert a frame
     this.selector.innerHTML = '';
-    this.selector.appendChild(this.sliderFrame);
+    this.outerFrame.appendChild(this.sliderFrame);
+    this.selector.appendChild(this.outerFrame);
 
     // Go to currently active slide after initial build
     this.slideToCurrent();
+
+    if(this.config.navigation || typeof this.config.navigation === 'object') {
+      this.buildNavigation();
+    }
+
     this.config.onInit.call(this);
   }
 
@@ -350,7 +361,7 @@ export default class Siema {
   mouseupHandler(e) {
     e.stopPropagation();
     this.pointerDown = false;
-    this.selector.style.cursor = '-webkit-grab';
+    this.outerFrame.style.cursor = '-webkit-grab';
     this.sliderFrame.style.webkitTransition = `all ${this.config.duration}ms ${this.config.easing}`;
     this.sliderFrame.style.transition = `all ${this.config.duration}ms ${this.config.easing}`;
     if (this.drag.endX) {
@@ -367,7 +378,7 @@ export default class Siema {
     e.preventDefault();
     if (this.pointerDown) {
       this.drag.endX = e.pageX;
-      this.selector.style.cursor = '-webkit-grabbing';
+      this.outerFrame.style.cursor = '-webkit-grabbing';
       this.sliderFrame.style.webkitTransition = `all 0ms ${this.config.easing}`;
       this.sliderFrame.style.transition = `all 0ms ${this.config.easing}`;
       this.sliderFrame.style[this.transformProperty] = `translate3d(${(this.currentSlide * (this.selectorWidth / this.perPage) + (this.drag.startX - this.drag.endX)) * -1}px, 0, 0)`;
@@ -381,7 +392,7 @@ export default class Siema {
   mouseleaveHandler(e) {
     if (this.pointerDown) {
       this.pointerDown = false;
-      this.selector.style.cursor = '-webkit-grab';
+      this.outerFrame.style.cursor = '-webkit-grab';
       this.drag.endX = e.pageX;
       this.sliderFrame.style.webkitTransition = `all ${this.config.duration}ms ${this.config.easing}`;
       this.sliderFrame.style.transition = `all ${this.config.duration}ms ${this.config.easing}`;
@@ -400,9 +411,10 @@ export default class Siema {
     this.sliderFrame.style.width = `${(this.selectorWidth / this.perPage) * this.innerElements.length}px`;
     this.sliderFrame.style.webkitTransition = `all ${this.config.duration}ms ${this.config.easing}`;
     this.sliderFrame.style.transition = `all ${this.config.duration}ms ${this.config.easing}`;
+    this.sliderFrame.style.willChange = 'transform';
 
     if (this.config.draggable) {
-      this.selector.style.cursor = '-webkit-grab';
+      this.outerFrame.style.cursor = '-webkit-grab';
     }
 
     // Create a document fragment to put slides into it
@@ -423,10 +435,14 @@ export default class Siema {
 
     // Clear selector (just in case something is there) and insert a frame
     this.selector.innerHTML = '';
-    this.selector.appendChild(this.sliderFrame);
+    this.outerFrame.appendChild(this.sliderFrame);
+    this.selector.appendChild(this.outerFrame);
 
     // Go to currently active slide after initial build
     this.slideToCurrent();
+    if(this.config.navigation || typeof this.config.navigation === 'object') {
+      this.buildNavigation();
+    }
   }
 
 
@@ -509,14 +525,14 @@ export default class Siema {
    */
   destroy(restoreMarkup = false, callback) {
     window.removeEventListener('resize', this.resizeHandler);
-    this.selector.style.cursor = 'auto';
-    this.selector.removeEventListener('touchstart', this.touchstartHandler);
-    this.selector.removeEventListener('touchend', this.touchendHandler);
-    this.selector.removeEventListener('touchmove', this.touchmoveHandler);
-    this.selector.removeEventListener('mousedown', this.mousedownHandler);
-    this.selector.removeEventListener('mouseup', this.mouseupHandler);
-    this.selector.removeEventListener('mouseleave', this.mouseleaveHandler);
-    this.selector.removeEventListener('mousemove', this.mousemoveHandler);
+    this.outerFrame.style.cursor = 'auto';
+    this.outerFrame.removeEventListener('touchstart', this.touchstartHandler);
+    this.outerFrame.removeEventListener('touchend', this.touchendHandler);
+    this.outerFrame.removeEventListener('touchmove', this.touchmoveHandler);
+    this.outerFrame.removeEventListener('mousedown', this.mousedownHandler);
+    this.outerFrame.removeEventListener('mouseup', this.mouseupHandler);
+    this.outerFrame.removeEventListener('mouseleave', this.mouseleaveHandler);
+    this.outerFrame.removeEventListener('mousemove', this.mousemoveHandler);
 
     if (restoreMarkup) {
       const slides = document.createDocumentFragment();
@@ -531,5 +547,51 @@ export default class Siema {
     if (callback) {
       callback.call(this);
     }
+  }
+
+  buildNavigation(){
+    this.buildNextElement();
+    this.buildPreviousElement();
+
+    let containerNavigation = document.createElement('div');
+    containerNavigation.classList.add('siema-nav');    
+    
+    containerNavigation.appendChild(this.nextElement);
+    containerNavigation.appendChild(this.previousElement);
+    this.selector.appendChild(containerNavigation);
+  }
+
+  buildNextElement(){
+    const nextElement = document.createElement('div');
+    let insideNext = 'Next';
+    
+    nextElement.classList.add('siema-nav-item');
+
+    if(typeof this.config.navigation === 'object'){
+      if(!!this.config.navigation.next){
+        insideNext = this.config.navigation.next;
+      }
+    }
+    nextElement.innerHTML = insideNext;
+    nextElement.addEventListener('click', f => { this.next.call(this) });
+
+    this.nextElement = nextElement;
+  }
+
+  buildPreviousElement(){
+    const previousElement = document.createElement('div');
+    let insidePrev = 'Previous';
+    
+    previousElement.classList.add('siema-nav-item');
+    
+    if(typeof this.config.navigation === 'object'){
+      if(!!this.config.navigation.prev){
+        insidePrev = this.config.navigation.prev;
+      }
+    }
+    previousElement.innerHTML = insidePrev;
+    previousElement.addEventListener('click', f => { this.prev.call(this) });
+
+    this.previousElement = previousElement;
   }
 }
