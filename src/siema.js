@@ -150,6 +150,8 @@ export default class Siema {
     if(this.config.navigation || typeof this.config.navigation === 'object') {
       this.buildNavigation();
     }
+    
+    this.buildPagination();
 
     this.config.onInit.call(this);
   }
@@ -234,6 +236,7 @@ export default class Siema {
     if (this.innerElements.length <= this.perPage) {
       return;
     }
+    console.log(index);
     const beforeChange = this.currentSlide;
     this.currentSlide = Math.min(Math.max(index, 0), this.innerElements.length - this.perPage);
     if (beforeChange !== this.currentSlide) {
@@ -549,6 +552,40 @@ export default class Siema {
     }
   }
 
+  buildPagination(){
+    let containerPagination = document.createElement('div');
+    containerPagination.classList.add('siema-pagination');
+
+    let n = Math.ceil(this.innerElements.length / this.perPage);
+    let t = 1;
+
+    for(let i = 0; i < n; i++){
+      let item = document.createElement('div');
+      item.appendChild(document.createTextNode(i +1));
+      item.addEventListener('click', (e) => { console.log('Índice' + this.getIndex(e.srcElement)); this.goTo.call(this, t) });
+      console.log(t);
+      t = t + this.perPage;
+      containerPagination.appendChild(item);
+    }
+    this.selector.appendChild(containerPagination);
+  }
+
+  getIndex(el){
+    let i = 0;
+    let len = 1;
+
+    while(el.nextElementSibling){
+      i++;
+    }
+
+    if(el.parentElement){
+      let parent = el.parentElement;
+      len = parent.children.length;
+    }
+
+    return len - i;
+  }
+
   buildNavigation(){
     this.buildNextElement();
     this.buildPreviousElement();
@@ -565,7 +602,7 @@ export default class Siema {
     const nextElement = document.createElement('div');
     let insideNext = 'Next';
     
-    nextElement.classList.add('siema-nav-item');
+    nextElement.classList.add('siema-nav-item', '-next');
 
     if(typeof this.config.navigation === 'object'){
       if(!!this.config.navigation.next){
@@ -573,7 +610,7 @@ export default class Siema {
       }
     }
     nextElement.innerHTML = insideNext;
-    nextElement.addEventListener('click', f => { this.next.call(this) });
+    nextElement.addEventListener('click', f => { this.next.call(this, this.perPage) });
 
     this.nextElement = nextElement;
   }
@@ -582,7 +619,7 @@ export default class Siema {
     const previousElement = document.createElement('div');
     let insidePrev = 'Previous';
     
-    previousElement.classList.add('siema-nav-item');
+    previousElement.classList.add('siema-nav-item', '-prev');
     
     if(typeof this.config.navigation === 'object'){
       if(!!this.config.navigation.prev){
@@ -590,7 +627,7 @@ export default class Siema {
       }
     }
     previousElement.innerHTML = insidePrev;
-    previousElement.addEventListener('click', f => { this.prev.call(this) });
+    previousElement.addEventListener('click', f => { this.prev.call(this, this.perPage) });
 
     this.previousElement = previousElement;
   }
