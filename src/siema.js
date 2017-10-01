@@ -43,6 +43,7 @@ export default class Siema {
       threshold: 20,
       loop: false,
       navigation: false,
+      pagination: false,
       onInit: () => {},
       onChange: () => {},
     };
@@ -151,7 +152,9 @@ export default class Siema {
       this.buildNavigation();
     }
     
-    this.buildPagination();
+    if(this.config.pagination){
+      this.buildPagination();
+    }
 
     this.config.onInit.call(this);
   }
@@ -223,7 +226,7 @@ export default class Siema {
       if (callback) {
         callback.call(this);
       }
-    }
+    }    
   }
 
 
@@ -236,7 +239,7 @@ export default class Siema {
     if (this.innerElements.length <= this.perPage) {
       return;
     }
-    console.log(index);
+
     const beforeChange = this.currentSlide;
     this.currentSlide = Math.min(Math.max(index, 0), this.innerElements.length - this.perPage);
     if (beforeChange !== this.currentSlide) {
@@ -286,6 +289,13 @@ export default class Siema {
     this.sliderFrame.style.width = `${(this.selectorWidth / this.perPage) * this.innerElements.length}px`;
 
     this.slideToCurrent();
+    
+    setTimeout(f=> {
+      if(this.config.pagination){
+        this.destroyPagination();
+        this.buildPagination();
+      }
+    }, 200);
   }
 
 
@@ -446,6 +456,14 @@ export default class Siema {
     if(this.config.navigation || typeof this.config.navigation === 'object') {
       this.buildNavigation();
     }
+
+    setTimeout(f=> {
+      if(this.config.pagination){
+        this.destroyPagination();
+        this.buildPagination();
+      }
+    }, 200);
+
   }
 
 
@@ -552,49 +570,67 @@ export default class Siema {
     }
   }
 
-  buildPagination(){
-    let containerPagination = document.createElement('div');
-    containerPagination.classList.add('siema-pagination');
-
-    let n = Math.ceil(this.innerElements.length / this.perPage);
-    let t = 1;
-
-    for(let i = 0; i < n; i++){
-      let item = document.createElement('div');
-      item.appendChild(document.createTextNode(i +1));
-      item.addEventListener('click', (e) => { console.log('Índice' + this.getIndex(e.srcElement)); this.goTo.call(this, t) });
-      console.log(t);
-      t = t + this.perPage;
-      containerPagination.appendChild(item);
-    }
-    this.selector.appendChild(containerPagination);
+  destroyPagination(){
+    this.selector.removeChild(this.pagination);
+    this.pagination = null;
   }
 
-  getIndex(el){
-    let i = 0;
-    let len = 1;
+  buildPagination(){
+    let containerPagination = document.createElement('div');
+    let paginationAmount = Math.ceil(this.innerElements.length / this.perPage);    
+    let paginationList = document.createElement('ol');
 
-    while(el.nextElementSibling){
-      i++;
+    for(let i = 0; i < paginationAmount; i++){
+      let item = document.createElement('li');
+      let button = document.createElement('button');
+      item.classList.add('item');
+      button.type = 'button';
+      button.classList.add('button');
+      button.appendChild(document.createTextNode(i + 1));
+      item.appendChild(button);
+      button.addEventListener('click', (e) => { this.goTo.call(this, this.resolvePaginationSlideTarget(e.srcElement.parentElement)) });
+      paginationList.appendChild(item);
     }
+    
+    paginationList.classList.add('siema-paginationlist');
+    containerPagination.classList.add('siema-pagination');
+    containerPagination.appendChild(paginationList);
+    this.selector.appendChild(containerPagination);
 
-    if(el.parentElement){
-      let parent = el.parentElement;
+    this.pagination = containerPagination;
+  }
+
+  resolvePaginationSlideTarget(el){
+    return this.perPage * this.getElementIndex(el);
+  }
+
+  getElementIndex(el){
+    let index = 0;
+    let len = 1;
+    let parent = el.parentElement;
+    
+    if(parent){
       len = parent.children.length;
     }
 
-    return len - i;
+    while(el.nextElementSibling){
+      el = el.nextElementSibling;
+      index++;
+    }
+    
+    return len - index - 1;
   }
 
   buildNavigation(){
-    this.buildNextElement();
-    this.buildPreviousElement();
+    let nextElement = this.buildNextElement();
+    let previousElement = this.buildPreviousElement();
 
     let containerNavigation = document.createElement('div');
     containerNavigation.classList.add('siema-nav');    
     
-    containerNavigation.appendChild(this.nextElement);
-    containerNavigation.appendChild(this.previousElement);
+    containerNavigation.appendChild(nextElement);
+    containerNavigation.appendChild(previousElement);
+
     this.selector.appendChild(containerNavigation);
   }
 
@@ -612,7 +648,7 @@ export default class Siema {
     nextElement.innerHTML = insideNext;
     nextElement.addEventListener('click', f => { this.next.call(this, this.perPage) });
 
-    this.nextElement = nextElement;
+    return nextElement;
   }
 
   buildPreviousElement(){
@@ -629,6 +665,6 @@ export default class Siema {
     previousElement.innerHTML = insidePrev;
     previousElement.addEventListener('click', f => { this.prev.call(this, this.perPage) });
 
-    this.previousElement = previousElement;
+    return previousElement;
   }
 }
