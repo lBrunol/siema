@@ -1,0 +1,89 @@
+@import url('https://fonts.googleapis.com/css?family=Lato');
+body { font-family: 'Lato'; }
+button { border: 0; outline: 0; }
+
+.siema-carousel {
+    position: relative;
+    z-index: 1;
+}
+
+.siema-carousel .siema-item {
+    background-color: #ffb2b2;
+    color: #fff;
+    height: 200px;
+    border-radius: 5px;
+    margin: 5px;
+    display: flex;
+    justify-content: center;
+    align-content: center;
+}
+
+.siema-carousel .siema-item span {
+    align-self: center;
+    font-size: 50px;
+}
+
+/* Navigation items */
+.siema-nav-item {    
+    height: 140px;
+    top: calc(50% - 90px);
+    position: absolute;
+}
+
+.siema-nav-item.-next {
+    right: 0;
+}
+
+.siema-nav-item.-prev {
+    left: 0;
+}
+
+.siema-nav-item > .button {
+    font-size: 100px;
+    color: #fff;
+    background-color: transparent;
+    transition: .2s linear transform;    
+}
+
+.siema-nav-item > .button:hover {
+    color: #EC407A;
+    transform: scale(1.2);
+    transform-origin: center;
+}
+
+/* Pagination */
+.siema-pagination {
+    position: relative;
+    z-index: 3;
+}
+.siema-paginationlist {
+    padding: 0;
+    text-align: center;
+    list-style: none;
+}
+
+.siema-paginationlist > .item {
+    margin-left: 5px;
+    display: inline-block;
+}
+
+.siema-paginationlist > .item:first-child {
+    margin-left: 0;
+}
+
+.siema-paginationlist > .item > .button {
+    width: 17px;
+    height: 17px;
+    background-color: #EC407A;
+    border-radius: 50%;
+}
+
+.siema-paginationlist > .item > .button:hover,
+.siema-paginationlist > .item > .button:focus,
+.siema-paginationlist > .item > .button:active,
+.siema-paginationlist > .item > .button:active:focus {
+    background-color: #8a3d5e;
+}
+.siema-paginationlist > .item > .button.-active {
+    background-color: #9c003c;
+}

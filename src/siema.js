@@ -16,6 +16,10 @@ export default class Siema {
     this.innerElements = [].slice.call(this.selector.children);
     this.currentSlide = this.config.startIndex;
     this.transformProperty = Siema.webkitOrNot();
+    this.pagination = null;
+    this.navigation = null;
+    this.autoPlayTime = 4000;
+    this.autoPlayInterval = null;
 
     // Bind all event handlers for referencability
     ['resizeHandler', 'touchstartHandler', 'touchendHandler', 'touchmoveHandler', 'mousedownHandler', 'mouseupHandler', 'mouseleaveHandler', 'mousemoveHandler'].forEach(method => {
@@ -42,6 +46,7 @@ export default class Siema {
       draggable: true,
       threshold: 20,
       loop: false,
+      autoPlay: false,
       navigation: false,
       pagination: false,
       onInit: () => {},
@@ -151,14 +156,64 @@ export default class Siema {
     if(this.config.navigation || typeof this.config.navigation === 'object') {
       this.buildNavigation();
     }
-    
+
     if(this.config.pagination){
       this.buildPagination();
+      this.updateActiveIndexPagination();
     }
+
+    this.play();
 
     this.config.onInit.call(this);
   }
 
+  /**
+   * Starts carousel autoplay
+   */
+  play(){
+    this.stop();
+    if(this.config.autoPlay){
+      this.resolveAutoPlayTime();
+
+      this.autoPlayInterval = window.setInterval(f => {
+        this.next(this.perPage);
+        this.updateActiveIndexPagination();
+      }, this.autoPlayTime);
+    }
+  }
+
+  /**
+   * Stops carousel autoplay
+   *
+   */
+  stop(){
+    if(this.config.autoPlay && this.autoPlayInterval){
+      window.clearInterval(this.autoPlayInterval);
+    }
+  }
+
+  /**
+   * Restarts carousel autoplay
+   *
+   */
+  restartAutoPlay(){
+    this.stop();
+    this.play();
+  }
+
+  /**
+   * Resolve o tempo de autoplay do carousel. Caso true seja passado na configuração 'autoPlay', o tempo utilizado será de 4000ms.
+   * Caso seja passado um inteiro válido maior que 999, este erá assumido para o autoPlay.
+   *
+   * Resolve carousel autoplay time. Wheither the 'autoPlay' value is true, the time will be 4000ms. Case the value a valid integer
+   */
+  resolveAutoPlayTime(){
+    if(this.config.autoPlay){
+      if(!isNaN(parseFloat(this.config.autoPlay) && this.config.autoPlay > 999)){
+        this.autoPlayTime = this.config.autoPlay;
+      }
+    }
+  }
 
   /**
    * Determinates slides number accordingly to clients viewport.
@@ -200,6 +255,8 @@ export default class Siema {
       if (callback) {
         callback.call(this);
       }
+      this.updateActiveIndexPagination();
+      this.restartAutoPlay();
     }
   }
 
@@ -226,7 +283,9 @@ export default class Siema {
       if (callback) {
         callback.call(this);
       }
-    }    
+      this.updateActiveIndexPagination();
+      this.restartAutoPlay();
+    }
   }
 
 
@@ -248,6 +307,8 @@ export default class Siema {
       if (callback) {
         callback.call(this);
       }
+      this.updateActiveIndexPagination();
+      this.restartAutoPlay();
     }
   }
 
@@ -275,6 +336,7 @@ export default class Siema {
       this.next(howManySliderToSlide);
     }
     this.slideToCurrent();
+    this.restartAutoPlay();
   }
 
 
@@ -289,13 +351,15 @@ export default class Siema {
     this.sliderFrame.style.width = `${(this.selectorWidth / this.perPage) * this.innerElements.length}px`;
 
     this.slideToCurrent();
-    
+
     setTimeout(f=> {
+      this.restartAutoPlay();
       if(this.config.pagination){
         this.destroyPagination();
         this.buildPagination();
       }
-    }, 200);
+      this.updateActiveIndexPagination();
+    }, 300);
   }
 
 
@@ -464,6 +528,7 @@ export default class Siema {
       }
     }, 200);
 
+    this.restartAutoPlay();
   }
 
 
@@ -514,7 +579,7 @@ export default class Siema {
 
 
   /**
-   * Prepernd item to carousel.
+   * Prepend item to carousel.
    * @param {HTMLElement} item - Item to prepend.
    * @param {function} callback - Optional callback to call after prepend.
    */
@@ -555,6 +620,8 @@ export default class Siema {
     this.outerFrame.removeEventListener('mouseleave', this.mouseleaveHandler);
     this.outerFrame.removeEventListener('mousemove', this.mousemoveHandler);
 
+    this.stop();
+
     if (restoreMarkup) {
       const slides = document.createDocumentFragment();
       for (let i = 0; i < this.innerElements.length; i++) {
@@ -570,14 +637,22 @@ export default class Siema {
     }
   }
 
+  /**
+   * Destrói a paginação
+   *
+   */
   destroyPagination(){
     this.selector.removeChild(this.pagination);
     this.pagination = null;
   }
 
+  /**
+   * Constrói a paginação
+   *
+   */
   buildPagination(){
     let containerPagination = document.createElement('div');
-    let paginationAmount = Math.ceil(this.innerElements.length / this.perPage);    
+    let paginationAmount = Math.ceil(this.innerElements.length / this.perPage);
     let paginationList = document.createElement('ol');
 
     for(let i = 0; i < paginationAmount; i++){
@@ -586,12 +661,13 @@ export default class Siema {
       item.classList.add('item');
       button.type = 'button';
       button.classList.add('button');
-      button.appendChild(document.createTextNode(i + 1));
       item.appendChild(button);
-      button.addEventListener('click', (e) => { this.goTo.call(this, this.resolvePaginationSlideTarget(e.srcElement.parentElement)) });
+      button.addEventListener('click', (e) => {
+        this.goTo.call(this, this.resolvePaginationSlideTarget(e.srcElement.parentElement))
+      });
       paginationList.appendChild(item);
     }
-    
+
     paginationList.classList.add('siema-paginationlist');
     containerPagination.classList.add('siema-pagination');
     containerPagination.appendChild(paginationList);
@@ -600,15 +676,56 @@ export default class Siema {
     this.pagination = containerPagination;
   }
 
+  /**
+   * Atualiza o índice atual da paginação
+   *
+   */
+  updateActiveIndexPagination(){
+    if(this.config.pagination && this.pagination){
+      let activeIndexPagination = Math.floor(this.currentSlide / this.perPage);
+      let items = this.pagination.querySelector('.siema-paginationlist').children;
+
+      this.removeActiveClassPagination();
+      items[activeIndexPagination].querySelector('button').classList.add('-active');
+    }
+  }
+
+  /**
+   * Removes '-active' class from buttons of the pagination
+   *
+   */
+  removeActiveClassPagination(){
+    if(this.config.pagination && this.pagination){
+      let buttons = this.pagination.querySelectorAll('.siema-paginationlist .button');
+      if(buttons.length > 0){
+        buttons.forEach((item) => {
+          item.classList.remove('-active');
+        });
+      }
+    }
+  }
+
+  /**
+   * Returns the pagination target index
+   *
+   * @param {HTMLElement} el
+   * @returns {number}
+   */
   resolvePaginationSlideTarget(el){
     return this.perPage * this.getElementIndex(el);
   }
 
+  /**
+   * Get the element index
+   *
+   * @param {HTMLElement} el element to discover
+   * @returns {number} Element index
+   */
   getElementIndex(el){
     let index = 0;
     let len = 1;
     let parent = el.parentElement;
-    
+
     if(parent){
       len = parent.children.length;
     }
@@ -617,53 +734,78 @@ export default class Siema {
       el = el.nextElementSibling;
       index++;
     }
-    
+
     return len - index - 1;
   }
 
+  /**
+   * Appends the navigation to carousel.
+   *
+   */
   buildNavigation(){
-    let nextElement = this.buildNextElement();
-    let previousElement = this.buildPreviousElement();
+    const nextElement = this.buildNextElement();
+    const previousElement = this.buildPreviousElement();
 
-    let containerNavigation = document.createElement('div');
-    containerNavigation.classList.add('siema-nav');    
-    
-    containerNavigation.appendChild(nextElement);
-    containerNavigation.appendChild(previousElement);
+    this.navigation = document.createElement('div');
+    this.navigation.classList.add('siema-nav');
 
-    this.selector.appendChild(containerNavigation);
+    this.navigation.appendChild(nextElement);
+    this.navigation.appendChild(previousElement);
+
+    this.selector.appendChild(this.navigation);
   }
 
+  /**
+   * Builds the next element. It's possible include an html string inside the button, however, whether
+   * the parameter navigation not containg a html string, the function returns a button with 'Next' text inside itself.
+   *
+   * @returns { HTMLDivElement } return the div element that represent the button next
+   */
   buildNextElement(){
     const nextElement = document.createElement('div');
     let insideNext = 'Next';
-    
+
     nextElement.classList.add('siema-nav-item', '-next');
 
+    //Check whether navigation config is a object and whether next property not is null.
     if(typeof this.config.navigation === 'object'){
       if(!!this.config.navigation.next){
         insideNext = this.config.navigation.next;
       }
     }
     nextElement.innerHTML = insideNext;
-    nextElement.addEventListener('click', f => { this.next.call(this, this.perPage) });
+
+    //Attach next function on click to nextElement
+    nextElement.addEventListener('click', f => {
+      this.next.call(this)
+    });
 
     return nextElement;
   }
 
+  /**
+   * Builds the previous element. It's possible include an html string inside the button, however, whether
+   * the parameter navigation not containg a html string, the function returns a button with 'Previous' text inside itself.
+   * @returns { HTMLDivElement } return the div element that represent the button prev
+   */
   buildPreviousElement(){
     const previousElement = document.createElement('div');
     let insidePrev = 'Previous';
-    
+
     previousElement.classList.add('siema-nav-item', '-prev');
-    
+
+    //Check whether navigation config is a object and whether prev property not is null.
     if(typeof this.config.navigation === 'object'){
       if(!!this.config.navigation.prev){
         insidePrev = this.config.navigation.prev;
       }
     }
     previousElement.innerHTML = insidePrev;
-    previousElement.addEventListener('click', f => { this.prev.call(this, this.perPage) });
+
+    //Attach prev function on click to prevElement
+    previousElement.addEventListener('click', f => {
+      this.prev.call(this);
+    });
 
     return previousElement;
   }

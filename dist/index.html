@@ -4,31 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Document</title>
+    <title>Siema Carousel</title>
     <!-- Latest compiled and minified CSS -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous" />
-    <link href="https://fonts.googleapis.com/css?family=Lato" rel="stylesheet">
-    <style>
-        body { font-family: 'Lato'; }
-        .siema .siema-item { 
-            background-color: #40a939;
-            color: #fff;
-            height: 200px;
-            border-radius: 5px;
-            margin: 5px;
-            display: flex;
-            justify-content: center;
-            align-content: center;
-        }
-        .siema .siema-item span {
-            align-self: center;
-            font-size: 50px;
-        }
-    </style>
+    <link rel="stylesheet" href="siema.custom.css" />
 </head>
 <body>
     <div class="container">
-        <div class="siema">
+        <div class="siema-carousel">
             <div class="siema-item"><span>01</span></div>
             <div class="siema-item"><span>02</span></div>
             <div class="siema-item"><span>03</span></div>
@@ -45,19 +28,25 @@
             <div class="siema-item"><span>14</span></div>
             <div class="siema-item"><span>15</span></div>
         </div>
+        <!-- <button class="stop-siema">Stop</button>
+        <button class="play-siema">Play</button> -->
     </div>
 </body>
 <script src="siema.min.js"></script>
 <script>
-    new Siema({
+    var siema = new Siema({
+        selector: '.siema-carousel',
         loop: true,
         duration: 500,
         perPage: {
             800: 2,
             1240: 3
         },
-        navigation: { next: '<a href="#">Próximo</a>', prev: '<a href="#">Anterior</a>' },
+        navigation: { next: '<button type="button" class="button">&rsaquo;</button>', prev: '<button type="button" class="button">&lsaquo;</button>' },
         pagination: true
     });
+    //document.querySelector('.play-siema').addEventListener('click', f => { siema.play(); });
+    //document.querySelector('.stop-siema').addEventListener('click', f => { siema.stop(); });
+    console.log(siema);
 </script>
 </html>
